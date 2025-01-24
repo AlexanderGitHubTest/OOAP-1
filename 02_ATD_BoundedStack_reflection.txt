@@ -1,0 +1,159 @@
+Рефлексия по АТД BoundedStack.
+
+1. Невнимательно прочитал задание. Выложил реализацию вместо АТД, а само АТД было только "в голове". 
+Ниже сделаю реализацию, как я её понял при выполнении задания, а потом сравню с приведённым решением.
+
+==============================================================================================
+================================ Начало АТД BoundedStack =====================================
+
+abstract class BoundedStack<T>
+
+    public const int POP_NIL = 0; // push() ещё не вызывалась
+    public const int POP_OK = 1; // последняя pop() отработала нормально
+    public const int POP_ERR = 2; // стек пуст
+
+    public const int PEEK_NIL = 0; // push() ещё не вызывалась
+    public const int PEEK_OK = 1; // последняя peek() вернула корректное значение 
+    public const int PEEK_ERR = 2; // стек пуст
+
+    public const int PUSH_NIL = 0; // push() ещё не вызывалась
+    public const int PUSH_OK = 1; // последняя push() отработала нормально
+    public const int PUSH_ERR = 2; // стек достиг максимального размера
+
+    public const int STACK_SIZE_DEFAULT_MAX = 32; // максимально допустимый размер стека по-умолчанию
+
+
+    // конструктор
+    public BoundedStack<T> BoundedStack(int size); // постусловие: создан новый пустой стек
+
+
+    // команды:
+// предусловие: стек не достиг максимального размера; 
+// постусловие: в стек добавлено новое значение
+    public void push(T value); 
+
+// предусловие: стек не пустой; 
+// постусловие: из стека удалён верхний элемент
+    public void pop(); 
+
+// постусловие: из стека удалятся все значения
+    public void clear();
+
+
+    // запросы:
+// предусловие: стек не пустой
+    public T peek(); 
+
+    public int size();
+
+
+    // дополнительные запросы:
+    public int get_pop_status(); // возвращает значение POP_*
+    public int get_peek_status(); // возвращает значение PEEK_*
+    public int get_push_status(); // возвращает значение PUSH_*
+
+=============================== Завершение АТД BoundedStack ==================================
+==============================================================================================
+
+2. Сравнение своего АТД и эталонного АТД.
+
+2.1. Константы.
+2.1.1. В эталоне нет константы "int STACK_SIZE_DEFAULT_MAX = 32". Вот здесь не понял пока: что делать с константами такого вида в АТД? Получается,
+что константы учитываются только в реализации. Перечитал теорию "мы полностью отвязываемся от конкретных структур данных внутри объектов, 
+и работаем с классами исключительно через их публичные интерфейсы (наборы операций), ничего не зная об их внутренней реализации.". Получается,
+что данная константа должна быть приватной и появиться, соответственно, только на этапе реализации. 
+2.1.2. В эталоне нет константы "int PUSH_NIL = 0". Почему? Перечитал материалы. Для POP и PEEK начальное состояние было отделено от ошибки из-за 
+исчерпания стека, потому что это некая точная характеристика ошибки (и то и другое ошибка пустого стека, но есть нюанс). А вот для PUSH пустой стек - это
+вариант нормы и выделять его смысла нет.
+
+2.2. Конструктор.
+2.2.1. Не прописал постусловие "создан новый пустой стек".
+2.2.2. Параметр конструктора лучше назвать max_size, так как это максимальный размер стека.
+
+2.3. Команда PUSH.
+2.3.1. Можно в комментарии точнее писать: не про размер стека, а про максимальное число элементов.
+
+2.4. Запросы.
+2.4.1. Не добавил у себя запрос "public int max_size();" - выдать максимальное число элементов.
+
+
+3. Ниже исправленный вариант реализации (на основе эталонного АТД).
+
+==============================================================================================
+=========================== Начало реализации АТД BoundedStack ===============================
+class BoundedStack<T>
+
+  // скрытые поля
+  private const int STACK_SIZE_DEFAULT_MAX = 32; // максимально допустимый размер стека по-умолчанию
+
+  private List<T> stack; // основное хранилище стека
+  private int peek_status; // статус запроса peek()
+  private int pop_status; // статус команды pop()
+  private int push_status; // статус команды push()
+  private int stack_size_max; // максимально допустимый размер стека
+
+  // интерфейс класса, реализующий АТД Stack
+  public const int POP_NIL = 0;
+  public const int POP_OK = 1;
+  public const int POP_ERR = 2;
+  public const int PEEK_NIL = 0;
+  public const int PEEK_OK = 1;
+  public const int PEEK_ERR = 2;
+  public const int PUSH_OK = 1;
+  public const int PUSH_ERR = 2;
+
+  public void BoundedStack(int size) // конструктор
+    stack_size_max = size
+    clear()
+
+  public void BoundedStack() // конструктор без параметра
+    BoundedStack(STACK_SIZE_DEFAULT_MAX)
+
+  public void push(T value)
+    if size() < stack_size_max
+      stack.Append(value)
+      push_status = PUSH_OK
+    else
+      push_status = PUSH_ERR
+
+  public void pop()
+    if size() > 0
+      stack.RemoveAt(-1)
+      pop_status = POP_OK
+    else
+      pop_status = POP_ERR
+
+  public void clear()
+    stack = [ ] // пустой список/стек
+
+    // начальные статусы для предусловий peek() и pop()
+    peek_status = PEEK_NIL
+    pop_status = POP_NIL
+
+  public T peek()
+    if size() > 0
+      result = stack[-1]
+      peek_status = PEEK_OK
+    else
+      result = 0
+      peek_status = PEEK_ERR
+    return result
+
+  public int size()
+    return stack.Length()
+
+  public int max_size()
+    return stack_size_max
+
+  // запросы статусов
+  public int get_pop_status()
+    return pop_status
+
+  public int get_peek_status()
+    return peek_status
+
+  public int get_push_status()
+    return push_status
+
+========================= Завершение реализации АТД BoundedStack =============================
+==============================================================================================
