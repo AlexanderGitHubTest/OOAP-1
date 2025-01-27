@@ -1,0 +1,625 @@
+1. АТД ParentList (родитель для АТД LinkedList и АТД TwoWayList). АТД ParentList такой же, 
+как АТД LinkList из предыдущего задания.
+
+==============================================================================================
+================================= Начало АТД ParentList ======================================
+
+// АТД ParentList
+abstract class ParentList<T>
+
+    public const int HEAD_OK = 1; // последняя head() отработала нормально
+    public const int HEAD_ERR = 2; // список пуст
+
+    public const int TAIL_OK = 1; // последняя tail() отработала нормально
+    public const int TAIL_ERR = 2; // список пуст
+
+    public const int RIGHT_OK = 1; // последняя right() отработала нормально
+    public const int RIGHT_ERR = 2; // правее курсора нет элементов
+
+    public const int GET_OK = 1; // последняя get() отработала нормально
+    public const int GET_ERR = 2; // список пуст
+
+    public const int PUT_RIGHT_OK = 1; // последняя put_right() отработала нормально
+    public const int PUT_RIGHT_ERR = 2; // список пуст
+
+    public const int PUT_LEFT_OK = 1; // последняя put_left() отработала нормально
+    public const int PUT_LEFT_ERR = 2; // список пуст
+
+    public const int REMOVE_OK = 1; // последняя remove() отработала нормально
+    public const int REMOVE_ERR = 2; // список пуст
+
+    public const int ADD_TO_EMPTY_OK = 1; // последняя add_to_empty() отработала нормально
+    public const int ADD_TO_EMPTY_ERR = 2; // список не пуст
+
+    public const int REPLACE_OK = 1; // последняя replace() отработала нормально
+    public const int REPLACE_ERR = 2; // список пуст
+
+    public const int FIND_OK = 1; // последняя find() отработала нормально
+    public const int FIND_EMPTY = 2; // список пуст
+    public const int FIND_NOT_FOUND = 3; // следующий не найден
+
+
+    // конструктор
+    public ParentList<T> ParentList(); // постусловие: создан новый пустой список
+
+
+    // команды
+
+// установить курсор на первый узел в списке
+// предусловие: список не пуст
+// постусловие: курсор стоит на 1-м узле списка
+    public void head();
+
+// установить курсор на последний узел в списке
+// предусловие: список не пуст
+// постусловие: курсор стоит на последнем узле списка
+    public void tail();
+
+// сдвинуть курсор на один узел вправо
+// предусловие: правее курсора есть элемент
+// постусловие: курсор переместился на один узел вправо
+    public void right();
+
+// вставить следом за текущим узлом
+// новый узел с заданным значением
+// предусловие: список не пуст
+// постусловие: справа от курсора добавлен узел с заданным значением
+    public void put_right(T value);
+
+// вставить перед текущим узлом
+// новый узел с заданным значением
+// предусловие: список не пуст
+// постусловие: слева от курсора добавлен узел с заданным значением
+    public void put_left(T value);
+
+// удалить текущий узел
+// (курсор смещается к правому соседу, если он есть,
+// в противном случае курсор смещается к левому соседу,
+// если он есть)
+// предусловие: список не пуст
+// постусловие: узел, на который указывал курсор, удален,
+//              если был узел справа от текущего, то курсор переместился на него, 
+//              если не было узла справа от текущего, но был узел слева от текущего, 
+//              то курсор переместился на него
+    public void remove();
+
+// очистить список
+// постусловие: пустой список
+    public void clear();
+
+// добавить новый узел в пустой список
+// предусловие: пустой список
+// постусловие: список с одним узлом
+// постусловие: курсор указывает на единственный узел списка
+    public void add_to_empty(T value);
+
+// добавить новый узел в хвост списка
+// новый узел с заданным значением
+// добавление: считаем, что для пустого списка будет просто добавление первого узла
+// постусловие: если список пустой, то добавлен первый узел
+//              если список не пустой, то добавлен узел в конец
+    public void add_tail(T value);
+
+// заменить значение текущего узла на заданное
+// предусловие: список не пуст
+// постусловие: значение узла, куда указывает курсор, изменено на заданное
+    public void replace(T value);
+
+// установить курсор на следующий узел
+// с искомым значением (по отношению к текущему узлу)
+// постусловие: курсор установлен на следующий узел 
+// с искомым значением, если такой узел найден
+    public void find(T value);
+
+// удалить в списке все узлы с заданным значением
+// добавление: считаем, что отсутствие узлов с заданным значением это нормально
+// постусловие: все элементы списка удалены
+    public void remove_all(T value);
+
+
+    // запросы:
+// получить значение текущего узла
+// предусловие: стек не пустой
+    public T get();
+
+// посчитать количество узлов в списке
+    public int size();
+
+// находится ли курсор в начале списка?
+    public bool is_head();
+
+// находится ли курсор в конце списка?
+    public bool is_tail();
+
+// установлен ли курсор на какой-либо узел в списке
+// (по сути, непустой ли список)
+    public bool is_value();
+
+
+    // дополнительные запросы:
+    public int get_head_status(); // возвращает значение HEAD_*
+    public int get_tail_status(); // возвращает значение TAIL_*
+    public int get_right_status(); // возвращает значение RIGHT_*
+    public int get_get_status(); // возвращает значение GET_*
+    public int get_put_right_status(); // возвращает значение PUT_RIGHT_*
+    public int get_put_left_status(); // возвращает значение PUT_LEFT_*
+    public int get_remove_status(); // возвращает значение PUT_REMOVE_*
+    public int get_add_to_empty_status(); // возвращает значение ADD_TO_EMPTY_*
+    public int get_replace_status(); // возвращает значение REPLACE_*
+    public int get_find_status(); // возвращает значение FIND_*
+
+================================ Завершение АТД ParentList ===================================
+==============================================================================================
+
+
+2. АТД LinkedList. АТД LinkedList наследуется от АТД ParentList без изменений.
+
+==============================================================================================
+================================= Начало АТД LinkedList ======================================
+
+// АТД LinkedList
+abstract class LinkedList<T> extends ParentList
+
+================================ Завершение АТД LinkedList ===================================
+==============================================================================================
+
+
+3. АТД TwoWayList. АТД TwoWayList наследуется от АТД ParentList с добавлением команды Left и
+вспомогательного запроса статуса работы Left.
+
+==============================================================================================
+================================= Начало АТД TwoWayList ======================================
+
+// АТД TwoWayList
+abstract class TwoWayList<T> extends ParentList
+
+    public const int LEFT_OK = 1; // последняя left() отработала нормально
+    public const int LEFT_ERR = 2; // левее курсора нет элементов
+
+
+    // команды
+
+// сдвинуть курсор на один узел влево
+// предусловие: левее курсора есть элемент
+// постусловие: курсор переместился на один узел влево
+    public void left();
+
+
+    // дополнительные запросы:
+
+    public int get_left_status(); // возвращает значение LEFT_*
+
+================================ Завершение АТД TwoWayList ===================================
+==============================================================================================
+
+
+4. Реализация АТД ParentList.
+
+==============================================================================================
+============================ Начало реализации АТД ParentList ================================
+
+class ParentList:
+
+    # приватные переменные
+    class _Node:
+        def __init__(self, value):
+            self.value = value
+            self.next = None
+            self.prev = None
+
+    head_status = None
+    tail_status = None
+    right_status = None
+    get_status = None
+    put_right_status = None
+    put_left_status = None
+    remove_status = None
+    add_to_empty_status = None
+    replace_status = None
+    find_status = None
+        
+
+    # публичные константы
+    
+    HEAD_OK = 1 # последняя head() отработала нормально
+    HEAD_ERR = 2 # список пуст
+
+    TAIL_OK = 1 # последняя tail() отработала нормально
+    TAIL_ERR = 2 # список пуст
+
+    RIGHT_OK = 1 # последняя right() отработала нормально
+    RIGHT_ERR = 2 # правее курсора нет элементов
+
+    GET_OK = 1 # последняя get() отработала нормально
+    GET_ERR = 2 # список пуст
+
+    PUT_RIGHT_OK = 1 # последняя put_right() отработала нормально
+    PUT_RIGHT_ERR = 2 # список пуст
+
+    PUT_LEFT_OK = 1 # последняя put_left() отработала нормально
+    PUT_LEFT_ERR = 2 # список пуст
+
+    REMOVE_OK = 1 # последняя remove() отработала нормально
+    REMOVE_ERR = 2 # список пуст
+
+    ADD_TO_EMPTY_OK = 1 # последняя add_to_empty() отработала нормально
+    ADD_TO_EMPTY_ERR = 2 # список не пуст
+
+    REPLACE_OK = 1 # последняя replace() отработала нормально
+    REPLACE_ERR = 2 # список пуст
+
+    FIND_OK = 1 # последняя find() отработала нормально
+    FIND_EMPTY = 2 # список пуст
+    FIND_NOT_FOUND = 3 # следующий не найден
+
+
+    ## конструктор
+    def __init__(self)  # постусловие: создан новый пустой список
+        self.head = None
+        self.tail = None
+        self.cursor = None
+
+    ## команды
+
+    # установить курсор на первый узел в списке
+    # предусловие: список не пуст
+    # постусловие: курсор стоит на 1-м узле списка
+    def head(self):
+        if self.cursor is not None:
+            self.cursor = self.head
+            self.head_status = self.HEAD_OK
+            return
+        self.head_status = self.HEAD_ERR
+
+    # установить курсор на последний узел в списке
+    # предусловие: список не пуст
+    # постусловие: курсор стоит на последнем узле списка
+    def tail(self):
+        if self.cursor is not None:
+            self.cursor = self.tail
+            self.tail_status = self.TAIL_OK
+            return
+        self.tail_status = self.TAIL_ERR
+
+    # сдвинуть курсор на один узел вправо
+    # предусловие: правее курсора есть элемент
+    # постусловие: курсор переместился на один узел вправо
+    def right(self):
+        if (
+            self.cursor is not None
+            and self.cursor != self.tail
+           ):
+            self.cursor = self.cursor.next
+            self.right_status = self.RIGHT_OK
+            return
+        self.right_status = self.RIGHT_ERR
+
+    # вставить следом за текущим узлом
+    # новый узел с заданным значением
+    # предусловие: список не пуст
+    # постусловие: справа от курсора добавлен узел с заданным значением
+    def put_right(self, value):
+        if (
+            self.cursor is not None
+            and self.cursor == self.tail
+           ):
+            self.tail = self._NODE(
+                value=self.value, 
+                next=None, 
+                prev=self.cursor
+            )
+            self.cursor.next = self.tail            
+            self.put_right_status = self.PUT_RIGHT_OK
+            return
+        if self.cursor is not None:
+            node_new = self._NODE(
+                value=self.value, 
+                next=self.cursor.next, 
+                prev=self.cursor
+            )
+            self.cursor.next.prev = node_new
+            self.cursor.next = node_new
+            self.put_right_status = self.PUT_RIGHT_OK
+            return
+        self.put_right_status = self.PUT_RIGHT_ERR
+
+    # вставить перед текущим узлом
+    # новый узел с заданным значением
+    # предусловие: список не пуст
+    # постусловие: слева от курсора добавлен узел с заданным значением
+    put_left(self, value):
+        if (
+            self.cursor is not None
+            and self.cursor == self.head
+           ):
+            self.head = self._NODE(
+                value=self.value, 
+                next=self.cursor, 
+                prev=None
+            )
+            self.cursor.prev = self.head            
+            self.put_left_status = self.PUT_LEFT_OK
+            return
+        if self.cursor is not None:
+            node_new = self._NODE(
+                value=self.value, 
+                next=self.cursor, 
+                prev=self.cursor.prev
+            )
+            self.cursor.prev.next = node_new
+            self.cursor.prev = node_new
+            self.put_left_status = self.PUT_LEFT_OK
+            return
+        self.put_left_status = self.PUT_LEFT_ERR
+
+    # удалить текущий узел
+    # (курсор смещается к правому соседу, если он есть,
+    # в противном случае курсор смещается к левому соседу,
+    # если он есть)
+    # предусловие: список не пуст
+    # постусловие: узел, на который указывал курсор, удален,
+    #              если был узел справа от текущего, то курсор переместился на него, 
+    #              если не было узла справа от текущего, но был узел слева от текущего, 
+    #              то курсор переместился на него
+    def remove(self):
+        # пустой список
+        if self.cursor is None:
+            self.remove_status = self.REMOVE_ERR
+            return
+        # один элемент в списке
+        if self.head == self.tail:
+            self.head = None
+            self.tail = None
+            node_remove = self.cursor
+            self.cursor = None
+            del node_remove
+            self.remove_status = self.REMOVE_OK
+            return
+        # курсор в начале списка 
+        if self.cursor = self.head:
+            node_remove = self.cursor
+            self.head = node_remove.next
+            self.cursor = node_remove.next
+            node_remove.next.prev = None
+            del node_remove
+            self.remove_status = self.REMOVE_OK
+            return            
+        # курсор в конце списка
+        if self.cursor = self.tail:
+            node_remove = self.cursor
+            self.tail = node_remove.prev
+            self.cursor = node_remove.prev
+            node_remove.prev.next = None
+            del node_remove
+            self.remove_status = self.REMOVE_OK
+            return            
+        # курсор не в начале и не в конце списка
+        node_remove = self.cursor
+        self.cursor = node_remove.next
+        node_remove.prev.next = node_remove.next
+        node_remove.next.prev = node_remove.prev
+        del node_remove
+        self.remove_status = self.REMOVE_OK
+
+    # очистить список
+    # постусловие: пустой список
+    def clear():
+        while self.cursor is not None:
+            self.remove()
+
+    # добавить новый узел в пустой список
+    # предусловие: пустой список
+    # постусловие: список с одним узлом
+    # постусловие: курсор указывает на единственный узел списка
+    def add_to_empty(self, value):
+        if self.cursor is None:
+            node_new = self._NODE(
+                value=self.value, 
+                next=None, 
+                prev=None
+            )
+            self.cursor = node_new
+            self.head = node_new
+            self.tail = node_new
+            self.add_to_empty_status = self.ADD_TO_EMPTY_OK
+            return            
+        self.add_to_empty_status = self.ADD_TO_EMPTY_ERR
+
+    # добавить новый узел в хвост списка
+    # новый узел с заданным значением
+    # добавление: считаем, что для пустого списка будет просто добавление первого узла
+    # постусловие: если список пустой, то добавлен первый узел
+    #              если список не пустой, то добавлен узел в конец
+    def add_tail(self, value):
+        if self.cursor is None:
+            self.add_to_empty(value)
+            return
+        cursor_position = self.cursor
+        self.cursor = self.tail
+        self.put_right(value)
+        self.cursor = cursor_position
+
+    # заменить значение текущего узла на заданное
+    # предусловие: список не пуст
+    # постусловие: значение узла, куда указывает курсор, изменено на заданное
+    def replace(self, value):
+        if self.cursor is not None:
+            self.cursor.value = value
+            self.replace_status = self.REPLACE_OK
+            return
+        self.replace_status = self.REPLACE_ERR
+
+    # установить курсор на следующий узел
+    # с искомым значением (по отношению к текущему узлу)
+    # постусловие: курсор установлен на следующий узел 
+    # с искомым значением, если такой узел найден
+    def find(self, value):
+        if self.cursor is None:
+            self.find_status = self.FIND_EMPTY
+            return
+        node_current = self.cursor
+        while node_current.next is not None:
+            node_current = node_current.next
+            if node_current.value == value:
+                self.cursor = node_current
+                self.find_status = self.FIND_OK
+                return
+        self.find_status = self.FIND_NOT_FOUND
+
+    # удалить в списке все узлы с заданным значением
+    # добавление: считаем, что отсутствие узлов с заданным значением это нормально
+    # постусловие: все элементы списка удалены
+    def remove_all(self, value):
+        if self.cursor is None:
+            return
+        node_current = self.head
+        while True:
+            # узел обработан - чтобы обрабатывать узел только по одной ветке
+            is_processed_node = False
+            next_node = node_current.next
+            if node_current.value != value:
+                is_processed_node = True
+            if (not is_processed_node
+                and node_current.value == value
+                and self.cursor == node_current
+               ):
+                self.remove()
+                is_processed_node = True
+            if (not is_processed_node
+                node_current.value == value
+                and self.cursor != node_current
+               ):
+                current_cursor = self.cursor
+                self.cursor = node_current
+                self.remove()
+                self.cursor = current_cursor
+                is_processed_node = True
+            node_current = next_node
+            if node_current is None:
+                break
+
+
+    ## запросы:
+
+    # получить значение текущего узла
+    # предусловие: стек не пустой
+    def get(self):
+        if self.cursor is not None:
+            self.get_status = self.GET_OK
+            return self.cursor.value
+        self.get_status = self.GET_ERR
+
+    # посчитать количество узлов в списке
+    def size(self):
+        if self.cursor is None:
+            return 0
+        node_current = self.head
+        # посчитали начальный элемент
+        node_count = 1
+        while node_current.next is not None:
+            node_count += 1
+            node_count = node_count.next
+        return node_count
+
+    # находится ли курсор в начале списка?
+    def is_head(self):
+        return (
+            self.head is not None
+            and self.head == self.cursor
+        )
+
+    # находится ли курсор в конце списка?
+    def is_tail(self):
+        return (
+            self.tail is not None
+            and self.tail == self.cursor
+        )
+
+    # установлен ли курсор на какой-либо узел в списке
+    # (по сути, непустой ли список)
+    def is_value(self):
+        return (self.cursor is not None)
+
+
+    ## дополнительные запросы:
+
+    def get_head_status(self): # возвращает значение HEAD_*
+        return self.head_status
+
+    def get_tail_status(self): # возвращает значение TAIL_*
+        return self.tail_status
+
+    def get_right_status(self): # возвращает значение RIGHT_*
+        return self.right_status
+
+    def get_get_status(self): # возвращает значение GET_*
+        return self.get_status
+
+    def get_put_right_status(self): # возвращает значение PUT_RIGHT_*
+        return self.put_right_status
+
+    def get_put_left_status(self): # возвращает значение PUT_LEFT_*
+        return self.put_left_status
+
+    def get_remove_status(self): # возвращает значение PUT_REMOVE_*
+        return self.remove_status
+
+    def get_add_to_empty_status(self): # возвращает значение ADD_TO_EMPTY_*
+        return self.add_to_empty_status
+
+    def get_replace_status(self): # возвращает значение REPLACE_*
+        return self.replace_status
+
+    def get_find_status(self): # возвращает значение FIND_*
+        return self.find_status
+
+========================== Завершение реализации АТД ParentList ==============================
+==============================================================================================
+
+
+5. Реализация АТД LinkedList.
+
+==============================================================================================
+============================ Начало реализации АТД LinkedList ================================
+
+class LinkedList(ParentList):
+    pass
+
+========================== Завершение реализации АТД LinkedList ==============================
+==============================================================================================
+
+
+6. Реализация АТД TwoWayList.
+
+==============================================================================================
+============================ Начало реализации АТД TwoWayList ================================
+
+class TwoWayList(ParentList):
+
+    LEFT_OK = 1 # последняя left() отработала нормально
+    LEFT_ERR = 2 # левее курсора нет элементов
+
+
+    ## команды
+
+    # сдвинуть курсор на один узел влево
+    # предусловие: левее курсора есть элемент
+    # постусловие: курсор переместился на один узел влево
+    def left(self):
+        if (
+            self.cursor is not None
+            and self.cursor != self.head
+           ):
+            self.cursor = self.cursor.prev
+            self.left_status = self.LEFT_OK
+            return
+        self.left_status = self.LEFT_ERR
+
+
+    ## дополнительные запросы:
+
+    def get_left_status(self): # возвращает значение LEFT_*
+        return self.left_status
+
+========================== Завершение реализации АТД TwoWayList ==============================
+==============================================================================================
