@@ -1,0 +1,239 @@
+1. АТД DynArray
+
+==============================================================================================
+================================== Начало АТД DynArray =======================================
+
+// АТД DynArray
+abstract class DynArray<T>
+
+    public const int MAKE_ARRAY_OK = 1; // последняя make_array() отработала нормально
+    public const int MAKE_ARRAY_ERR_LESS_MINIMUM = 2; // новый размер массива меньше минимального
+
+    public const int INSERT_OK = 1; // последняя insert() отработала нормально
+    public const int INSERT_ERR_OUT_OF_RANGE = 2; // переданный индекс вне границ
+
+    public const int REMOVE_OK = 1; // последняя remove() отработала нормально
+    public const int REMOVE_ERR_OUT_OF_RANGE = 2; // переданный индекс вне границ
+
+    public const int GET_ITEM_OK = 1; // последняя get() отработала нормально
+    public const int GET_ITEM_ERR_OUT_OF_RANGE = 2; // переданный индекс вне границ
+
+
+    // конструктор
+    public DynArray<T> DynArray(); // постусловие: создан новый пустой массив минимальной длины
+
+
+    // команды
+
+// (базовая) изменение размера массива array
+// предусловие: новая емкость массива больше минимальной длины
+// постусловие: массив стал размера new_capacity
+//              и в него перенесены старые элементы
+    public void make_array(int new_capacity);
+
+// (базовая) добавление нового элемента в конец массива
+// постусловие: в массив добавлен в конец переданный элемент
+    public void append(T item);
+
+// вставка в i-ю позицию объекта item
+// предусловие: индекс в рамках границ, 
+//              либо равен длине массива
+// постусловие: если i в рамках границ, 
+//              то в i-ю позицию добавлен элемент item,
+//              (если, начиная с i-й позиции, были элементы,
+//              то они сдвинуты вперёд)
+//              если i равен длине массива, то элемент добавлен в конец
+//              
+    public void insert(T item, int i);
+
+// удаление элемента из i-й позиции
+// предусловие: индекс в рамках границ, 
+// постусловие: элемент в позиции i удален,
+//              если были элементы правее удаленного элемента,
+//              то они сдвинуты влево
+    public void remove(int i);
+
+
+    // запросы:
+
+// (базовый) получение объекта по его индексу
+// предусловие: индекс в рамках границ
+    public T get_item(int i);
+
+// получить текущее количество элементов в массиве
+    public int count();
+
+// получить текущую ёмкость массива
+    public int capacity();
+
+
+    // дополнительные запросы:
+    public int get_make_array_status(); // возвращает значение MAKE_ARRAY_*
+    public int get_insert_status(); // возвращает значение INSERT_*
+    public int get_remove_status(); // возвращает значение REMOVE_*
+    public int get_get_item_status(); // возвращает значение GET_ITEM_*
+
+================================= Завершение АТД DynArray ====================================
+==============================================================================================
+
+
+2. Реализация АТД DynArray.
+
+==============================================================================================
+============================ Начало реализации АТД DynArray ================================
+
+class DynArray:
+    
+    # приватные константы
+    
+    # Минимальный размер вместимости массива
+    ARRAY_CAPACITY_MIN = 16
+
+    # при падении заполненности массива до какой величины 
+    # нужно его уменьшать
+    MINIMUM_ARRAY_FILL_PERCENTAGE = 50
+
+    # во сколько раз уменьшать буфер
+    ARRAY_REDUCE_RATIO = 1.5
+
+    # во сколько раз увеличивать буфер
+    ARRAY_INCREASE_RATIO = 2
+
+
+    # приватные переменные
+
+    make_array_status = None
+    insert_status = None
+    remove_status = None
+    get_item_status = None
+        
+
+    # публичные константы
+
+    MAKE_ARRAY_OK = 1 # последняя make_array() отработала нормально
+    MAKE_ARRAY_ERR_LESS_MINIMUM = 2 # новый размер массива меньше минимального
+
+    INSERT_OK = 1 # последняя insert() отработала нормально
+    INSERT_ERR_OUT_OF_RANGE = 2 # переданный индекс вне границ
+
+    REMOVE_OK = 1 # последняя remove() отработала нормально
+    REMOVE_ERR_OUT_OF_RANGE = 2 # переданный индекс вне границ
+
+    GET_ITEM_OK = 1 # последняя get() отработала нормально
+    GET_ITEM_ERR_OUT_OF_RANGE = 2 # переданный индекс вне границ
+
+
+    ## конструктор
+    def __init__(self)  # постусловие: создан новый пустой массив минимальной длины
+        self.size = 0 # текущая заполненность массива
+        self.capacity = self.ARRAY_CAPACITY_MIN # текущий размер массива
+        self.array = [None] * self.capacity
+
+
+    ## команды
+
+    # (базовая) изменение размера массива array
+    # предусловие: новая емкость массива больше минимальной длины
+    # постусловие: массив стал размера new_capacity
+    #              и в него перенесены старые элементы
+    def make_array(self, new_capacity):
+    if new_capacity < self.ARRAY_CAPACITY_MIN:
+        self.make_array_status = self.MAKE_ARRAY_ERR_LESS_MINIMUM
+        return
+    current_array = self.array
+    self.capacity = new_capacity
+    # новая емкость меньше, чем заполнено: копируем усеченный массив
+    if new_capacity < self.size:
+        self.array = current_array[0:new_capacity]
+        self.size = new_capacity
+        self.make_array_status = self.MAKE_ARRAY_OK
+        return
+    # новая емкость больше или равна заполненному: копируем что есть и дополняем пустыми значениями
+    self.array = current_array[0:self.capacity] + [None] * (new_capacity - self.size)
+    self.make_array_status = self.MAKE_ARRAY_OK 
+
+    # (базовая) добавление нового элемента в конец массива
+    # постусловие: в массив добавлен в конец переданный элемент
+    def append(self, item):
+        if self.capacity == self.size:
+            new_capacity = int(self.capacity * self.ARRAY_INCREASE_RATIO)
+            self.array = self.array[0:self.capacity] + [None] * (new_capacity - self.capacity)
+            self.capacity = new_capacity
+        self.array.append(item)
+        self.size += 1
+
+    # вставка в i-ю позицию объекта item
+    # предусловие: индекс в рамках границ, 
+    #              либо равен длине массива
+    # постусловие: если i в рамках границ, 
+    #              то в i-ю позицию добавлен элемент item,
+    #              (если, начиная с i-й позиции, были элементы,
+    #              то они сдвинуты вперёд)
+    #              если i равен длине массива, то элемент добавлен в конец
+    def insert(self, item, i):
+        if i < 0 or i > self.size:
+            self.insert_status = self.INSERT_ERR_OUT_OF_RANGE
+            return
+        if self.capacity == self.size:
+            new_capacity = int(self.capacity * self.ARRAY_INCREASE_RATIO)
+            self.array = self.array[0:self.capacity] + [None] * (new_capacity - self.capacity)
+            self.capacity = new_capacity
+        self.array.insert(i, item)
+        self.size += 1
+        self.insert_status = self.INSERT_OK
+
+    # удаление элемента из i-й позиции
+    # предусловие: индекс в рамках границ, 
+    # постусловие: элемент в позиции i удален,
+    #              если были элементы правее удаленного элемента,
+    #              то они сдвинуты влево
+    def remove(self, i):
+        if i < 0 or i >= self.size:
+            self.remove_status = self.REMOVE_ERR_OUT_OF_RANGE
+            return
+        self.array.pop(i)
+        self.size -= 1
+        # 100 - для получения отношения в процентах
+        if 100 * self.size // self.capacity < self.MINIMUM_ARRAY_FILL_PERCENTAGE:
+            new_capacity = int(self.capacity / self.ARRAY_INCREASE_RATIO)
+            self.array = self.array[0:self.size] + [None] * (new_capacity - self.size)
+            self.capacity = new_capacity
+        self.remove_status = self.REMOVE_OK
+
+
+    ## запросы:
+
+    # (базовый) получение объекта по его индексу
+    # предусловие: индекс в рамках границ
+    def get_item(self, i):
+        if i < 0 or i >= self.size:
+            get_item_status = GET_ITEM_ERR_OUT_OF_RANGE
+            return
+         self.get_item_status = self.GET_ITEM_OK
+         return self.array[i]
+
+    # получить текущее количество элементов в массиве
+    def count(self):
+        return self.size
+
+    # получить текущую ёмкость массива
+    def capacity(self):
+        return self.capacity
+
+
+    ## дополнительные запросы:
+
+    def get_make_array_status(self): # возвращает значение MAKE_ARRAY_*
+        return self.make_array_status
+
+    def get_insert_status(self): # возвращает значение INSERT_*
+        return self.insert_status
+
+    def get_remove_status(self): # возвращает значение REMOVE_*
+        return self.remove_status
+
+    def get_get_item_status(self): # возвращает значение GET_ITEM_*
+        return self.get_item_status
+
+=========================== Завершение реализации АТД DynArray ===============================
+==============================================================================================
