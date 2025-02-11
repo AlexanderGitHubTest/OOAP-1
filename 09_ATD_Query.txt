@@ -1,0 +1,149 @@
+1. АТД Query
+
+==============================================================================================
+==================================== Начало АТД Query ========================================
+
+// АТД Query
+abstract class Query<T>
+
+    public const int DELETE_FRONT_NIL = 0; // append ещё не вызывалась
+    public const int DELETE_FRONT_OK = 1; // последняя delete_front() отработала нормально
+    public const int DELETE_FRONT_EMPTY = 2; // очередь пустая
+
+    public const int GET_FRONT_NIL = 0; // append ещё не вызывалась
+    public const int GET_FRONT_OK = 1; // последняя get_front() отработала нормально
+    public const int GET_FRONT_EMPTY = 2; // очередь пустая
+
+
+    // конструктор
+    public Query<T> Query(); // постусловие: создана новая пустая очередь
+
+
+    // команды
+
+// (базовая) поместить элемент в конец очереди
+// постусловие: элемент помещен в конец очереди
+    public void append(T item);
+
+// (базовая) удалить начальный элемент очереди
+// предусловие: очередь не пустая
+// постусловие: удален начальный элемент очереди
+    public void delete_front();
+
+// очистить очередь
+// постусловие: очередь пустая
+    public void clear();
+
+
+    // запросы:
+
+// (базовый) получить начальный элемент очереди
+// предусловие: очередь не пустая
+    public T get_front();
+
+// (базовый) получить текущее количество элементов в очереди
+    public int size();
+
+// проверить, пустая ли очередь
+    public bool is_empty();
+
+
+    // дополнительные запросы:
+    public int get_delete_front_status(); // возвращает значение DELETE_FRONT_*
+    public int get_get_front_status(); // возвращает значение GET_FRONT_*
+
+=================================== Завершение АТД Query =====================================
+==============================================================================================
+
+
+2. Реализация АТД Query.
+
+==============================================================================================
+=============================== Начало реализации АТД Query ==================================
+
+from collections import deque
+
+
+class Query:
+    
+    # приватные переменные
+
+    delete_front_status = None
+    get_front_status = None
+        
+
+    # публичные константы
+
+    DELETE_FRONT_NIL = 0 # append ещё не вызывалась
+    DELETE_FRONT_OK = 1 # последняя delete_front() отработала нормально
+    DELETE_FRONT_EMPTY = 2 # очередь пустая
+
+    GET_FRONT_NIL = 0 # append ещё не вызывалась
+    GET_FRONT_OK = 1 # последняя get_front() отработала нормально
+    GET_FRONT_EMPTY = 2 # очередь пустая
+
+
+    ## конструктор
+    # постусловие: создан новый пустой массив минимальной длины
+    def __init__(self):
+        self.queue = deque()
+
+
+    ## команды
+
+    # (базовая) поместить элемент в конец очереди
+    # постусловие: элемент помещен в конец очереди
+    def append(self, item):
+        self.queue.append(item)
+
+    # (базовая) удалить начальный элемент очереди
+    # предусловие: очередь не пустая
+    # постусловие: удален начальный элемент очереди
+    def delete_front(self):
+        if self.delete_front_status is None:
+            self.delete_front_status = self.DELETE_FRONT_NIL
+            return 
+        if len(self.queue) > 0:
+            self.queue.popleft()
+            self.delete_front_status = self.DELETE_FRONT_OK
+            return
+        self.delete_front_status = self.DELETE_FRONT_EMPTY
+
+    # очистить очередь
+    # постусловие: очередь пустая
+    def clear(self):
+        self.queue.clear()
+
+
+    ## запросы:
+
+    # (базовый) получить начальный элемент очереди
+    # предусловие: очередь не пустая
+    def get_front(self):
+        if self.get_front_status is None:
+            self.get_front_status = self.GET_FRONT_NIL
+            return 
+        if len(self.queue) > 0:
+            self.get_front_status = self.GET_FRONT_OK
+            return self.queue[0]
+        self.get_front_status = self.GET_FRONT_EMPTY
+        
+    # (базовый) получить текущее количество элементов в очереди
+    def size(self):
+        return len(self.queue)
+
+    # проверить, пустая ли очередь
+    def is_empty(self):
+        return len(self.queue) == 0
+
+
+    ## дополнительные запросы:
+
+    def get_delete_front_status(self): # возвращает значение DELETE_FRONT_*
+        return self.delete_front_status
+
+    def get_get_front_status(self): # возвращает значение GET_FRONT_*
+        return self.get_front_status
+
+============================= Завершение реализации АТД Query ================================
+==============================================================================================
