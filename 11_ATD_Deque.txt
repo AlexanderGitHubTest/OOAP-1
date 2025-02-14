@@ -1,0 +1,287 @@
+1. АТД Deque V1 (без иерархии)
+
+==============================================================================================
+=================================== Начало АТД Deque V1 ======================================
+
+// АТД Deque
+abstract class Deque<T>
+
+    public const int GET_FRONT_OK = 1; // последняя get_front() отработала нормально
+    public const int GET_FRONT_EMPTY = 2; // очередь пустая
+
+    public const int REMOVE_FRONT_OK = 1; // последняя remove_front() отработала нормально
+    public const int REMOVE_FRONT_EMPTY = 2; // очередь пустая
+
+    public const int GET_TAIL_OK = 1; // последняя get_tail() отработала нормально
+    public const int GET_TAIL_EMPTY = 2; // очередь пустая
+
+    public const int REMOVE_TAIL_OK = 1; // последняя remove_tail() отработала нормально
+    public const int REMOVE_TAIL_EMPTY = 2; // очередь пустая
+
+    // конструктор
+    // постусловие: создана новая пустая двусторонняя очередь
+    public Deque<T> Deque(); 
+
+
+    // команды
+
+// поместить элемент в конец очереди
+// постусловие: элемент помещен в конец очереди
+    public void add_tail(T item);
+
+// удалить начальный элемент очереди
+// предусловие: очередь не пустая
+// постусловие: удален начальный элемент очереди
+    public void remove_front();
+
+// поместить элемент в начало очереди
+// постусловие: элемент помещен в начало очереди
+    public void add_front(T item);
+
+// удалить конечный элемент очереди
+// предусловие: очередь не пустая
+// постусловие: удален конечный элемент очереди
+    public void remove_tail();
+
+    // запросы:
+
+// получить начальный элемент очереди
+// предусловие: очередь не пустая
+    public T get_front();
+
+// получить конечный элемент очереди
+// предусловие: очередь не пустая
+    public T get_tail();
+
+// получить текущее количество элементов в очереди
+    public int size();
+
+
+    // дополнительные запросы:
+    public int get_get_front_status(); // возвращает значение GET_FRONT_*
+    public int get_remove_front_status(); // возвращает значение REMOVE_FRONT_*
+    public int get_get_tail_status(); // возвращает значение GET_TAIL_*
+    public int get_remove_tail_status(); // возвращает значение REMOVE_TAIL_*
+
+================================== Завершение АТД Deque V1 ===================================
+==============================================================================================
+
+
+2. Реализация АТД Deque V1 (без иерархии)
+
+==============================================================================================
+============================== Начало реализации АТД Deque V1 ================================
+
+from collections import deque
+
+
+class Deque:
+    
+    # приватные переменные
+
+    get_front_status = None
+    remove_front_status = None
+    get_tail_status = None
+    remove_tail_status = None
+        
+
+    # публичные константы
+
+    GET_FRONT_OK = 1 # последняя get_front() отработала нормально
+    GET_FRONT_EMPTY = 2 # очередь пустая
+
+    REMOVE_FRONT_OK = 1 # последняя remove_front() отработала нормально
+    REMOVE_FRONT_EMPTY = 2 # очередь пустая
+
+    GET_TAIL_OK = 1 # последняя get_tail() отработала нормально
+    GET_TAIL_EMPTY = 2 # очередь пустая
+
+    REMOVE_TAIL_OK = 1 # последняя remove_tail() отработала нормально
+    REMOVE_TAIL_EMPTY = 2 # очередь пустая
+
+
+    ## конструктор
+    # постусловие: создана новая пустая очередь
+    def __init__(self):
+        self.queue = deque()
+
+
+    ## команды
+
+    # поместить элемент в конец очереди
+    # постусловие: элемент помещен в конец очереди
+    def add_tail(self, item):
+        self.queue.append(item)
+
+    # удалить начальный элемент очереди
+    # предусловие: очередь не пустая
+    # постусловие: удален начальный элемент очереди
+    def remove_front(self):
+        if len(self.queue) > 0:
+            self.queue.popleft()
+            self.remove_front_status = self.REMOVE_FRONT_OK
+            return
+        self.remove_front_status = self.REMOVE_FRONT_EMPTY
+
+    # поместить элемент в начало очереди
+    # постусловие: элемент помещен в начало очереди
+    def add_front(self, item):
+        self.queue.appendleft(item)
+
+    # удалить конечный элемент очереди
+    # предусловие: очередь не пустая
+    # постусловие: удален конечный элемент очереди
+    def remove_tail(self):
+        if len(self.queue) > 0:
+            self.queue.pop()
+            self.remove_tail_status = self.REMOVE_TAIL_OK
+            return
+        self.remove_tail_status = self.REMOVE_TAIL_EMPTY
+
+
+    ## запросы:
+
+    # получить начальный элемент очереди
+    # предусловие: очередь не пустая
+    def get_front(self):
+        if len(self.queue) > 0:
+            self.get_front_status = self.GET_FRONT_OK
+            return self.queue[0]
+        self.get_front_status = self.GET_FRONT_EMPTY
+
+    # получить конечный элемент очереди
+    # предусловие: очередь не пустая
+    def get_tail(self):
+        if len(self.queue) > 0:
+            self.get_tail_status = self.GET_TAIL_OK
+            return self.queue[-1]
+        self.get_tail_status = self.GET_TAIL_EMPTY
+        
+    # получить текущее количество элементов в очереди
+    def size(self):
+        return len(self.queue)
+
+
+    ## дополнительные запросы:
+
+    def get_get_front_status(self): # возвращает значение GET_FRONT_*
+        return self.get_front_status
+    def get_remove_front_status(self): # возвращает значение REMOVE_FRONT_*
+        return self.remove_front_status
+    def get_get_tail_status(self): # возвращает значение GET_TAIL_*
+        return self.get_tail_status
+    def get_remove_tail_status(self): # возвращает значение REMOVE_TAIL_*
+        return self.remove_tail_status
+
+============================ Завершение реализации АТД Deque V1 ==============================
+==============================================================================================
+
+
+3. АТД ParentQueue
+
+==============================================================================================
+================================= Начало АТД ParentQueue =====================================
+
+// АТД ParentQueue
+abstract class ParentQueue<T>
+
+    public const int REMOVE_FRONT_OK = 1; // последняя remove_front() отработала нормально
+    public const int REMOVE_FRONT_EMPTY = 2; // очередь пустая
+
+    public const int GET_FRONT_OK = 1; // последняя get_front() отработала нормально
+    public const int GET_FRONT_EMPTY = 2; // очередь пустая
+
+
+    // конструктор
+    // постусловие: создана новая пустая родительская очередь
+    public ParentQueue<T> ParentQueue(); 
+
+
+    // команды
+
+// поместить элемент в конец очереди
+// постусловие: элемент помещен в конец очереди
+    public void add_tail(T item);
+
+// удалить начальный элемент очереди
+// предусловие: очередь не пустая
+// постусловие: удален начальный элемент очереди
+    public void remove_front();
+
+
+    // запросы:
+
+// получить начальный элемент очереди
+// предусловие: очередь не пустая
+    public T get_front();
+
+// получить текущее количество элементов в очереди
+    public int size();
+
+
+    // дополнительные запросы:
+    public int get_get_front_status(); // возвращает значение GET_FRONT_*
+    public int get_remove_front_status(); // возвращает значение REMOVE_FRONT_*
+
+================================ Завершение АТД ParentQueue ==================================
+==============================================================================================
+
+
+4. АТД Queue
+
+==============================================================================================
+==================================== Начало АТД Queue ========================================
+
+// АТД Queue
+abstract class Queue<T> : ParentQueue<T>
+
+    // конструктор
+    public Queue<T> Queue(); // постусловие: создана новая пустая очередь
+
+=================================== Завершение АТД Queue =====================================
+==============================================================================================
+
+
+5. АТД Deque V2 (с иерархией)
+
+==============================================================================================
+================================== Начало АТД Deque V2 =======================================
+
+// АТД Deque
+abstract class Deque<T> : ParentQueue<T>
+
+    public const int GET_TAIL_OK = 1; // последняя get_tail() отработала нормально
+    public const int GET_TAIL_EMPTY = 2; // очередь пустая
+
+    public const int REMOVE_TAIL_OK = 1; // последняя remove_tail() отработала нормально
+    public const int REMOVE_TAIL_EMPTY = 2; // очередь пустая
+
+    // конструктор
+    public Deque<T> Deque(); // постусловие: создана новая пустая двусторонняя очередь
+
+
+    // команды
+
+// поместить элемент в начало очереди
+// постусловие: элемент помещен в начало очереди
+    public void add_front(T item);
+
+// удалить конечный элемент очереди
+// предусловие: очередь не пустая
+// постусловие: удален конечный элемент очереди
+    public void remove_tail();
+
+
+    // запросы:
+
+// получить конечный элемент очереди
+// предусловие: очередь не пустая
+    public T get_tail();
+
+
+    // дополнительные запросы:
+    public int get_remove_tail_status(); // возвращает значение REMOVE_TAIL_*
+    public int get_get_tail_status(); // возвращает значение GET_TAIL_*
+
+================================== Завершение АТД Deque V2 ===================================
+==============================================================================================
