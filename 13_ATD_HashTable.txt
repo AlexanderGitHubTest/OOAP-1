@@ -1,0 +1,212 @@
+1. АТД HashTable
+
+==============================================================================================
+=================================== Начало АТД HashTable =====================================
+
+// АТД HashTable
+abstract class HashTable<T>
+
+    public const int PUT_OK = 1; // последняя put() отработала нормально
+    public const int PUT_COLLISION = 2; // коллизия при добавлении элемента
+
+    public const int REMOVE_OK = 1; // последняя remove() отработала нормально
+    public const int REMOVE_NOT_FOUND = 2; // значение для удаления в хэш-таблице не найдено
+
+
+    // конструктор
+    // постусловие: создана новая пустая хэш-таблица
+    public HashTable<T> HashTable(); 
+
+
+    // команды
+
+// добавить элемент в хэш-таблицу
+// постусловие: элемент добавлен в хэш-таблицу
+    public void put(T value);
+
+// удалить элемент из хэш-таблицы
+// постусловие: удален элемент из хэш-таблицы
+    public void remove(T value);
+
+// очистить хэш-таблицу
+// постусловие: хэш-таблица очищена
+    public void clear();
+
+
+    // запросы:
+
+// проверить, есть ли значение в хэш-таблице
+    public bool has_value(T value);
+
+
+    // дополнительные запросы:
+    public int get_put_status(); // возвращает значение PUT_*
+    public int get_remove_status(); // возвращает значение REMOVE_*
+
+================================== Завершение АТД HashTable ==================================
+==============================================================================================
+
+
+2. Реализация HashTable
+
+==============================================================================================
+============================== Начало реализации АТД HashTable ===============================
+
+from functools import reduce
+
+
+class HashTable:
+
+    # приватные константы
+ 
+    _SLOT_FREE = 1 # пустой слот
+    _SLOT_OCCUPIED = 2 # слот занят
+    _SLOT_DELETED = 3 # значение в слоте удалено
+    
+
+    # приватные переменные
+
+    _put_status = None
+    _remove_status = None
+        
+
+    # публичные константы
+
+    PUT_OK = 1 # последняя put() отработала нормально
+    PUT_COLLISION = 2 # коллизия при добавлении элемента
+
+    REMOVE_OK = 1 # последняя remove() отработала нормально
+    REMOVE_NOT_FOUND = 2 # значение для удаления в хэш-таблице не найдено
+
+
+    ## конструктор
+    # постусловие: создана новая пустая хэш-таблица
+    def __init__(self, size):
+        self.size = size
+        self.hash_table = []
+        for _ in range(size):
+            self.hash_table.append({'status': self._SLOT_FREE, 'value': None})
+
+
+    ## приватные функции
+    
+    # получение слота по значению
+    def _hash_fun(self, value):
+        # нестроковые значения преобразуем в строку,
+        # строки останутся строками
+        value_str = str(value)
+        # посчитаем сумму кодов всех символов строки
+        value_ord_sum = reduce(lambda res, item: ord(item) + res, value_str, 0)
+        return value_ord_sum % self.size
+
+    # поиск свободного слота по значению
+    # (методом последовательных проб)
+    # для операции добавления значения;
+    # возвращает словарь - описание см. ниже
+    def _seek_slot(self, value):
+
+        assert isinstance(self.size, int)
+        assert self.size > 0
+
+        # вычисленный слот
+        slot = self._hash_fun(value)
+
+        ## инициализируем словарь хранения результата
+        result = {}
+        # значение найдено в таблице
+        result['has_value'] = False
+        # номер слота со значением
+        result['value_slot_number'] = None
+        # есть свободный слот для добавления
+        result['is_free_slot'] = False
+        # номер свободного слота для добавления
+        result['free_slot_number'] = None
+
+        # осталось проверить строк в хэш-таблице 
+        row_left_count = self.size
+
+        while True:
+            # если слот занят и значение в слоте совпадает с переданным
+            if (
+                self.hash_table[slot]['status'] == self._SLOT_OCCUPIED
+                and self.hash_table[slot]['value'] == value
+               ):
+                result['has_value'] = True
+                result['value_slot_number'] = slot
+                result['is_free_slot'] = True
+                result['free_slot_number'] = slot
+                return result
+            # если слот не занят (пустой) и свободный слот для добавления ещё не был найден
+            if (
+                self.hash_table[slot]['status'] == self._SLOT_FREE
+                and result['is_free_slot'] == False
+               ):
+                result['is_free_slot'] = True
+                result['free_slot_number'] = slot
+                return result
+            # если слот не занят (значение в слоте было удалено) и свободный слот для добавления ещё не был найден
+            if (
+                self.hash_table[slot]['status'] == self._SLOT_DELETED
+                and result['is_free_slot'] == False
+               ):
+                result['is_free_slot'] = True
+                result['free_slot_number'] = slot
+            row_left_count -= 1
+            # если перебрали все строки в хэш-таблице
+            if row_left_count == 0:
+                return result    
+            # если это последний слот в хэш-таблице,
+            # то перейти к первому слоту, иначе к следующему
+            if slot == self.size - 1:
+                slot = 0
+            slot += 1    
+                
+    ## команды
+
+    # добавить элемент в хэш-таблицу
+    # постусловие: элемент добавлен в хэш-таблицу
+    def put(self, value):
+        result = self._seek_slot(value)
+        if result['is_free_slot']:
+            self.hash_table[result['free_slot_number']]['status'] = self._SLOT_OCCUPIED
+            self.hash_table[result['free_slot_number']]['value'] = value
+            self._put_status = self.PUT_OK
+            return
+        self._put_status = self.PUT_COLLISION
+
+    # удалить элемент из хэш-таблицы
+    # постусловие: удален элемент из хэш-таблицы
+    def remove(self, value):
+        result = self._seek_slot(value)
+        if result['has_value']:
+            self.hash_table[result['value_slot_number']]['status'] = self._SLOT_DELETED
+            self.hash_table[result['value_slot_number']]['value'] = None
+            self._remove_status = self.REMOVE_OK
+            return
+        self._remove_status = self.REMOVE_NOT_FOUND
+
+    # очистить хэш-таблицу
+    # постусловие: хэш-таблица очищена
+    def clear(self):
+        self.hash_table = []
+        for _ in range(self.size):
+            self.hash_table.append({'status': self._SLOT_FREE, 'value': None})
+
+
+    ## запросы:
+
+    # проверить, есть ли значение в хэш-таблице
+    def has_value(self, value):
+        result = self._seek_slot(value)
+        return result['has_value']
+
+
+    ## дополнительные запросы:
+
+    def get_put_status(self): # возвращает значение PUT_*
+        return self._put_status
+    def get_remove_status(self): # возвращает значение REMOVE_*
+        return self._remove_status
+
+============================ Завершение реализации АТД HashTable =============================
+==============================================================================================
