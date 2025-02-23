@@ -1,0 +1,349 @@
+АТД Ассоциативный массив.
+
+1. АТД NativeDictionary
+
+==============================================================================================
+=============================== Начало АТД NativeDictionary ==================================
+
+// АТД NativeDictionary
+abstract class NativeDictionary<T>
+
+
+    public const int REMOVE_OK = 1; // последняя remove() отработала нормально
+    public const int REMOVE_NOT_FOUND = 2; // ключ в ассоциативном массиве не найден
+
+    public const int GET_OK = 1; // последняя get() отработала нормально
+    public const int GET_NOT_FOUND = 2; // ключ в ассоциативном массиве не найден
+
+
+    // конструктор
+    // постусловие: создан новый пустой ассоциативный массив
+    public NativeDictionary<T> NativeDictionary(); 
+
+
+    // команды
+
+// добавить пару ключ-значение в ассоциативный массив
+// постусловие: пара ключ-значение добавлена в ассоциативный массив
+    public void put(String key, T value);
+
+// удалить пару ключ-значение из ассоциативного массива
+// предусловие: ключ существует в ассоциативном массиве
+// постусловие: пара ключ-значение удалена из ассоциативного массива
+    public void remove(String key);
+
+
+    // запросы:
+
+// проверить, есть ли ключ в ассоциативном массиве
+    public bool is_key(String key);
+
+// поиск и извлечение значения по ключу в ассоциативном массиве
+    public T get(String key);
+
+
+    // дополнительные запросы:
+    public int get_remove_status(); // возвращает значение REMOVE_*
+    public int get_get_status(); // возвращает значение GET_*
+
+============================== Завершение АТД NativeDictionary ===============================
+==============================================================================================
+
+
+2. Реализация NativeDictionary
+
+==============================================================================================
+========================== Начало реализации АТД NativeDictionary ============================
+
+class NativeDictionary:
+
+    # приватные константы
+ 
+    _HASH_FREE = None # пустое поле хэш
+    _HASH_DELETED = -1 # значение в поле хэш удалено
+
+    _DICTIONARY_CAPACITY_MIN = 8 # минимальный размер массива
+
+    # при падении заполненности массива до какой величины 
+    # нужно его уменьшать
+    _DICTIONARY_FILL_PERCENTAGE_MINIMUM = 17
+
+    # при увеличении заполненности массива до какой величины 
+    # нужно его увеличивать
+    _DICTIONARY_FILL_PERCENTAGE_MAXIMUM = 33
+
+    # во сколько раз уменьшать массив
+    _DICTIONARY_DECREASE_RATIO = 1.5
+
+    # во сколько раз увеличивать массив
+    _DICTIONARY_INCREASE_RATIO = 2
+
+    # Коэффициент перевода отношения в проценты
+    _RATIO_CONVERSION_FACTOR_TO_PERCENTAGE = 100
+
+    # приватные переменные
+
+    _remove_status = None
+    _get_status = None
+        
+
+    # публичные константы
+
+    REMOVE_OK = 1 # последняя remove() отработала нормально
+    REMOVE_NOT_FOUND = 2 # значение для удаления в ассоциативном массиве не найдено
+
+    GET_OK = 1 # последняя get() отработала нормально
+    GET_NOT_FOUND = 2 # ключ в ассоциативном массиве не найден
+
+
+    ## конструктор
+    # постусловие: создан новый пустой ассоциативный массив
+    def __init__(self):
+        self._size = 0
+        self._capacity = self._DICTIONARY_CAPACITY_MIN
+        self._dictionary = []
+        for _ in range(self._capacity):
+            self._dictionary.append({'hash': self._HASH_FREE,'key': None, 'value': None})
+
+    ## приватные функции
+    
+    # получение значения хэша по значению ключа
+    def _hash_fun(self, key):
+        # ключом могут быть только строки
+        assert isinstance(key, str), 'Key must be str type!'
+        # используем функцию hash: она никогда не возвращает -1
+        return hash(key)
+
+
+    # проверка, нужно ли увеличивать массив
+    # перед добавлением ещё одного элемента
+    def _is_need_dictionary_increase(self):
+        return (
+            self._RATIO_CONVERSION_FACTOR_TO_PERCENTAGE * (self._size + 1) 
+            // self._capacity 
+            > self._DICTIONARY_FILL_PERCENTAGE_MAXIMUM 
+               )
+
+
+    # увеличить массив
+    def _increase_dictionary(self):
+        dictionary_existing = self._dictionary
+        capacity_existing = self._capacity
+        self._capacity = int(self._capacity * self._DICTIONARY_INCREASE_RATIO)
+        self._dictionary = []
+        self._size = 0
+        for _ in range(self._capacity):
+            self._dictionary.append({'hash': self._HASH_FREE,'key': None, 'value': None})
+        for slot in range(capacity_existing):
+            if (
+                dictionary_existing[slot]['hash'] != self._HASH_FREE
+                and dictionary_existing[slot]['hash'] != self._HASH_DELETED
+               ):
+                # добавить хэш-ключ-значение в self._dictionary
+                self._put_value(
+                    key=dictionary_existing[slot]['key'], 
+                    key_hash=dictionary_existing[slot]['hash'],
+                    value=dictionary_existing[slot]['value']
+                               )
+
+
+    # проверка, нужно ли уменьшать массив
+    # (после удаления элемента)
+    def _is_need_dictionary_decrease(self):
+        return (
+            self._capacity > self._DICTIONARY_CAPACITY_MIN
+            and self._RATIO_CONVERSION_FACTOR_TO_PERCENTAGE * self._size 
+            // self._capacity 
+            < self._DICTIONARY_FILL_PERCENTAGE_MINIMUM 
+               )
+
+
+    # уменьшить массив
+    def _decrease_dictionary(self):
+        dictionary_existing = self._dictionary
+        capacity_existing = self._capacity
+        self._capacity = int(self._capacity / self._DICTIONARY_DECREASE_RATIO)
+        if self._capacity < self._DICTIONARY_CAPACITY_MIN:
+            self._capacity = self._DICTIONARY_CAPACITY_MIN
+        self._dictionary = []
+        self._size = 0
+        for _ in range(self._capacity):
+            self._dictionary.append({'hash': self._HASH_FREE,'key': None, 'value': None})
+
+        for slot in range(capacity_existing):
+            if (
+                dictionary_existing[slot]['hash'] != self._HASH_FREE
+                and dictionary_existing[slot]['hash'] != self._HASH_DELETED
+               ):
+                # добавить хэш-ключ-значение в self._dictionary
+                self._put_value(
+                    key=dictionary_existing[slot]['key'], 
+                    key_hash=dictionary_existing[slot]['hash'],
+                    value=dictionary_existing[slot]['value']
+                               )
+
+
+    # поиск свободного слота по значению
+    # (методом последовательных проб)
+    # для операции добавления значения;
+    # возвращает словарь - описание см. ниже
+    # TODO - функция _seek_slot перегружена, возвращает целый
+    # словарь значений, а вызывающие используют только часть:
+    # разбить бы её на несколько функций
+    def _seek_slot(self, key, key_hash, value):
+
+        slot = key_hash % self._capacity
+        ## инициализируем словарь хранения результата
+        result = {}
+        # значение найдено в таблице
+        result['has_value'] = False
+        # ключ найден в таблице
+        result['has_key'] = False
+        # номер слота со значением
+        result['key_slot_number'] = None
+        # есть свободный слот для добавления
+        result['is_free_slot'] = False
+        # номер свободного слота для добавления
+        result['free_slot_number'] = None
+
+        # сколько осталось проверить строк в массиве
+        row_left_count = self._capacity
+
+        while True:
+            # если слот занят, но совпадают хэш, ключ и значение
+            if (
+                self._dictionary[slot]['hash'] != self._HASH_FREE
+                and self._dictionary[slot]['hash'] != self._HASH_DELETED
+                and self._dictionary[slot]['hash'] == key_hash
+                and self._dictionary[slot]['key'] == key
+                and self._dictionary[slot]['value'] == value
+               ):
+                result['has_value'] = True
+                result['has_key'] = True
+                result['key_slot_number'] = slot
+                result['is_free_slot'] = True
+                result['free_slot_number'] = slot
+                return result
+            # если слот занят, но совпадают только хэш и ключ
+            if (
+                self._dictionary[slot]['hash'] != self._HASH_FREE
+                and self._dictionary[slot]['hash'] != self._HASH_DELETED
+                and self._dictionary[slot]['hash'] == key_hash
+                and self._dictionary[slot]['key'] == key
+               ):
+                result['has_key'] = True
+                result['key_slot_number'] = slot
+            # если слот не занят (пустой) и свободный слот для добавления ещё не был найден
+            if (
+                self._dictionary[slot]['hash'] == self._HASH_FREE
+                and result['is_free_slot'] == False
+               ):
+                result['is_free_slot'] = True
+                result['free_slot_number'] = slot
+                return result
+            # если слот не занят (значение в слоте было удалено) и свободный слот для добавления ещё не был найден
+            if (
+                self._dictionary[slot]['hash'] == self._HASH_DELETED
+                and result['is_free_slot'] == False
+               ):
+                result['is_free_slot'] = True
+                result['free_slot_number'] = slot
+            row_left_count -= 1
+            # если перебрали все строки в хэш-таблице
+            if row_left_count == 0:
+                return result    
+            # если это последний слот в хэш-таблице,
+            # то перейти к первому слоту, иначе к следующему
+            if slot == self._capacity - 1:
+                slot = 0
+            slot += 1    
+
+
+    # добавить значение в словарь
+    def _put_value(self, key, key_hash, value):
+        free_slot = self._seek_slot(key, key_hash, value)
+        assert free_slot['is_free_slot']
+        self._dictionary[free_slot['free_slot_number']]['hash'] = key_hash
+        self._dictionary[free_slot['free_slot_number']]['key'] = key
+        self._dictionary[free_slot['free_slot_number']]['value'] = value
+        self._size += 1
+
+
+    # удалить значение из словаря
+    def _remove_value(self, slot):
+        self._dictionary[slot]['hash'] = self._HASH_DELETED
+        self._dictionary[slot]['key'] = None
+        self._dictionary[slot]['value'] = None
+        self._size -= 1
+
+                      
+    ## команды
+
+    # добавить пару ключ-значение в ассоциативный массив
+    # постусловие: пара ключ-значение добавлена в ассоциативный массив
+    def put(self, key, value):
+        # если необходимо, увеличить размер массива
+        if self._is_need_dictionary_increase():
+            self._increase_dictionary()
+        # вычислить хэш ключа
+        key_hash = self._hash_fun(key)
+        # занести пару ключ-значение в массив
+        self._put_value(key, key_hash, value)
+
+
+    # удалить пару ключ-значение из ассоциативного массива
+    # предусловие: ключ существует в ассоциативном массиве
+    # постусловие: пара ключ-значение удалена из ассоциативного массива
+    def remove(self, key):
+        # вычислить хэш ключа
+        key_hash = self._hash_fun(key)
+        # TODO - разбить бы функцию _seek_slot на несколько, так как None играет 
+        # роль "неважного" значения, что неправильно
+        slot_find_result = self._seek_slot(key=key, key_hash=key_hash, value=None)
+        if not slot_find_result['has_key']:
+            self._remove_status = self.REMOVE_NOT_FOUND
+            return
+        if slot_find_result['has_key']:
+            self._remove_value(slot_find_result['key_slot_number'])
+        # если необходимо, уменьшить размер массива
+        if self._is_need_dictionary_decrease():
+            self._decrease_dictionary()
+        self._remove_status = self.REMOVE_OK
+
+
+    ## запросы:
+
+
+    # проверить, есть ли ключ в ассоциативном массиве
+    def is_key(self, key):
+        # вычислить хэш ключа
+        key_hash = self._hash_fun(key)
+        # TODO - разбить бы функцию _seek_slot на несколько, так как None играет 
+        # роль "неважного" значения, что неправильно
+        slot_find_result = self._seek_slot(key=key, key_hash=key_hash, value=None)
+        return slot_find_result['has_key']
+
+
+    # поиск и извлечение значения по ключу в ассоциативном массиве
+    def get(self, key):
+        # вычислить хэш ключа
+        key_hash = self._hash_fun(key)
+        # TODO - разбить бы функцию _seek_slot на несколько, так как None играет 
+        # роль "неважного" значения, что неправильно
+        slot_find_result = self._seek_slot(key=key, key_hash=key_hash, value=None)
+        if not slot_find_result['has_key']:
+            self._get_status = self.GET_NOT_FOUND
+            return
+        self._get_status = self.GET_OK
+        return self._dictionary[slot_find_result['key_slot_number']]['value']
+
+
+    ## дополнительные запросы:
+
+    def get_remove_status(self): # возвращает значение REMOVE_*
+        return self._remove_status
+    def get_get_status(self): # возвращает значение GET_*
+        return self._get_status
+
+======================== Завершение реализации АТД NativeDictionary ==========================
+==============================================================================================
