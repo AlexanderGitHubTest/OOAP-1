@@ -1,0 +1,469 @@
+АТД Множество.
+
+1. АТД PowerSet
+
+==============================================================================================
+=================================== Начало АТД PowerSet ======================================
+
+// АТД PowerSet
+abstract class PowerSet<T>
+
+    public const int PUT_OK = 1; // последняя put() отработала нормально
+    public const int PUT_VALUE_EXIST = 2; // значение уже есть в множестве
+
+    public const int REMOVE_OK = 1; // последняя remove() отработала нормально
+    public const int REMOVE_NOT_FOUND = 2; // значение в множестве не найдено
+
+
+    // конструктор
+    // постусловие: создано пустое множество
+    public PowerSet<T> PowerSet(); 
+
+
+    // команды
+
+// добавить значение в множество
+// предусловие: значения в множестве нет
+// постусловие: значение добавлено в множество
+    public void put(T value);
+
+// удалить значение из множества
+// предусловие: значение существует в множестве
+// постусловие: значение удалено из множества
+    public void remove(T value);
+
+
+    // запросы:
+
+// проверить, есть ли значение в множестве
+    public bool get(T value);
+
+// получить размер множества
+    public int size();
+
+// пересечение текущего множества и set2
+    public PowerSet intersection(PowerSet set2)
+
+// объединение текущего множества и set2
+    public PowerSet union(PowerSet set2)
+
+// разница текущего множества и set2
+    public PowerSet difference(PowerSet set2)
+
+// возвращает true, если set2 есть
+// подмножество текущего множества,
+// иначе false
+    public boolean isSubset(PowerSet set2)
+
+// возвращает true, 
+// если set2 равно текущему множеству,
+// иначе false
+    public bool equals(PowerSet set2)
+
+
+    // дополнительные запросы:
+    public int get_put_status(); // возвращает значение PUT_*
+    public int get_remove_status(); // возвращает значение REMOVE_*
+
+================================== Завершение АТД PowerSet ===================================
+==============================================================================================
+
+
+2. Реализация PowerSet
+
+==============================================================================================
+============================== Начало реализации АТД PowerSet ================================
+
+class PowerSet:
+
+    # приватные константы
+ 
+    _HASH_FREE = None # пустое поле хэш
+    _HASH_DELETED = -1 # значение в поле хэш удалено
+
+    _POWERSET_CAPACITY_MIN = 8 # минимальный размер множества
+
+    # при падении заполненности множества до какой величины
+    # нужно его уменьшать
+    _POWERSET_FILL_PERCENTAGE_MINIMUM = 17
+
+    # при увеличении заполненности множества до какой величины
+    # нужно его увеличивать
+    _POWERSET_FILL_PERCENTAGE_MAXIMUM = 33
+
+    # во сколько раз уменьшать множество
+    _POWERSET_DECREASE_RATIO = 1.5
+
+    # во сколько раз увеличивать множество
+    _POWERSET_INCREASE_RATIO = 2
+
+    # Коэффициент перевода отношения в проценты
+    _RATIO_CONVERSION_FACTOR_TO_PERCENTAGE = 100
+
+    # приватные переменные
+
+    _put_status = None
+    _remove_status = None
+
+
+    # публичные константы
+    PUT_OK = 1 # последняя put() отработала нормально
+    PUT_VALUE_EXIST = 2 # значение уже есть в множестве
+
+    REMOVE_OK = 1 # последняя remove() отработала нормально
+    REMOVE_NOT_FOUND = 2 # значение в множестве не найдено
+
+
+    ## конструктор
+    # постусловие: создано пустое множество
+    def __init__(self):
+        self._size = 0
+        self._capacity = self._POWERSET_CAPACITY_MIN
+        self._powerset = []
+        for _ in range(self._capacity):
+            self._powerset.append({'hash': self._HASH_FREE, 'value': None})
+
+
+    ## приватные функции
+    
+    # получение значения хэша по значению ключа
+    def _hash_fun(self, key):
+        # используем функцию hash: она никогда не возвращает -1
+        return hash(str(key))
+
+
+    # проверка, нужно ли увеличивать множество
+    # перед добавлением ещё одного элемента
+    def _is_need_powerset_increase(self):
+        return (
+            self._RATIO_CONVERSION_FACTOR_TO_PERCENTAGE * (self._size + 1) 
+            // self._capacity 
+            > self._POWERSET_FILL_PERCENTAGE_MAXIMUM
+               )
+
+
+    # увеличить множество
+    def _increase_powerset(self):
+        powerset_existing = self._powerset
+        capacity_existing = self._capacity
+        self._capacity = int(self._capacity * self._POWERSET_INCREASE_RATIO)
+        self._powerset = []
+        self._size = 0
+        for _ in range(self._capacity):
+            self._powerset.append({'hash': self._HASH_FREE, 'value': None})
+        for slot in range(capacity_existing):
+            if (
+                powerset_existing[slot]['hash'] != self._HASH_FREE
+                and powerset_existing[slot]['hash'] != self._HASH_DELETED
+               ):
+                # добавить значение в self._powerset
+                free_slot = self._seek_slot(
+                    powerset_existing[slot]['value'],
+                    powerset_existing[slot]['hash']
+                )
+                self._put_value(
+                    slot=free_slot['free_slot_number'],
+                    value=powerset_existing[slot]['value'],
+                    value_hash=powerset_existing[slot]['hash']
+                               )
+
+
+    # проверка, нужно ли уменьшать множество
+    # (после удаления элемента)
+    def _is_need_powerset_decrease(self):
+        return (
+            self._capacity > self._POWERSET_CAPACITY_MIN
+            and self._RATIO_CONVERSION_FACTOR_TO_PERCENTAGE * self._size 
+            // self._capacity 
+            < self._POWERSET_FILL_PERCENTAGE_MINIMUM
+               )
+
+
+    # уменьшить множество
+    def _decrease_powerset(self):
+        powerset_existing = self._powerset
+        capacity_existing = self._capacity
+        self._capacity = int(self._capacity / self._POWERSET_DECREASE_RATIO)
+        if self._capacity < self._POWERSET_CAPACITY_MIN:
+            self._capacity = self._POWERSET_CAPACITY_MIN
+        self._powerset = []
+        self._size = 0
+        for _ in range(self._capacity):
+            self._powerset.append({'hash': self._HASH_FREE, 'value': None})
+
+        for slot in range(capacity_existing):
+            if (
+                powerset_existing[slot]['hash'] != self._HASH_FREE
+                and powerset_existing[slot]['hash'] != self._HASH_DELETED
+               ):
+                # добавить значение в self._powerset
+                free_slot = self._seek_slot(
+                    powerset_existing[slot]['value'],
+                    powerset_existing[slot]['hash']
+                )
+                self._put_value(
+                    slot=free_slot['free_slot_number'],
+                    value=powerset_existing[slot]['value'],
+                    value_hash=powerset_existing[slot]['hash']
+                               )
+
+
+    # поиск свободного слота по значению
+    # (методом последовательных проб)
+    # для операции добавления значения;
+    # возвращает словарь - описание см. ниже
+    # TODO - функция _seek_slot перегружена, возвращает целый
+    # словарь значений, а вызывающие используют только часть:
+    # разбить бы её на несколько функций
+    def _seek_slot(self, value, value_hash):
+
+        slot = value_hash % self._capacity
+        ## инициализируем словарь хранения результата
+        result = {}
+        # значение найдено в множестве
+        result['has_value'] = False
+        # номер слота со значением
+        result['value_slot_number'] = None
+        # есть свободный слот для добавления
+        result['is_free_slot'] = False
+        # номер свободного слота для добавления
+        result['free_slot_number'] = None
+
+        # сколько осталось проверить строк в множестве
+        row_left_count = self._capacity
+
+        while True:
+            # если слот занят, но совпадают хэш и значение
+            if (
+                self._powerset[slot]['hash'] != self._HASH_FREE
+                and self._powerset[slot]['hash'] != self._HASH_DELETED
+                and self._powerset[slot]['hash'] == value_hash
+                and self._powerset[slot]['value'] == value
+               ):
+                result['has_value'] = True
+                result['value_slot_number'] = slot
+                result['is_free_slot'] = True
+                result['free_slot_number'] = slot
+                return result
+            # если слот не занят (пустой) и свободный слот для добавления ещё не был найден
+            if (
+                self._powerset[slot]['hash'] == self._HASH_FREE
+                and result['is_free_slot'] == False
+               ):
+                result['is_free_slot'] = True
+                result['free_slot_number'] = slot
+                return result
+            # если слот не занят (значение в слоте было удалено) и свободный слот для добавления ещё не был найден
+            if (
+                self._powerset[slot]['hash'] == self._HASH_DELETED
+                and result['is_free_slot'] == False
+               ):
+                result['is_free_slot'] = True
+                result['free_slot_number'] = slot
+            row_left_count -= 1
+            # если перебрали все строки в множестве
+            if row_left_count == 0:
+                return result    
+            # если это последний слот в множестве,
+            # то перейти к первому слоту, иначе к следующему
+            if slot == self._capacity - 1:
+                slot = 0
+            slot += 1    
+
+
+    # добавить значение в множество
+    def _put_value(self, slot, value, value_hash):
+        free_slot = self._seek_slot(value, value_hash)
+        assert free_slot['is_free_slot']
+        self._powerset[free_slot['free_slot_number']]['hash'] = value_hash
+        self._powerset[free_slot['free_slot_number']]['value'] = value
+        self._size += 1
+
+
+    # удалить значение из множества
+    def _remove_value(self, slot):
+        self._powerset[slot]['hash'] = self._HASH_DELETED
+        self._powerset[slot]['value'] = None
+        self._size -= 1
+
+
+    # заполненный ли элемент списка
+    def _is_item_fill(self, item):
+        '''
+        Метод получает элемент списка,
+        метод возвращает True, если в этом элементе
+        есть значение
+        '''
+        return (
+                item['hash'] != self._HASH_FREE
+                and item['hash'] != self._HASH_DELETED
+        )
+
+
+    ## команды
+
+    # добавить пару значение в множество
+    # предусловие: значения в множестве нет
+    # постусловие: значение добавлена в множество
+    def put(self, value):
+        # вычислить хэш значения
+        value_hash = self._hash_fun(value)
+        # поискать, есть ли значение в множестве
+        slot_find_result = self._seek_slot(value=value, value_hash=value_hash)
+        if slot_find_result['has_value']:
+            self._put_status = self.PUT_VALUE_EXIST
+            return
+        # если необходимо, увеличить размер множества
+        if self._is_need_powerset_increase():
+            self._increase_powerset()
+        # занести значение в множество
+        assert slot_find_result['is_free_slot']
+        self._put_value(slot_find_result['free_slot_number'], value, value_hash)
+        self._put_status = self.PUT_OK
+
+
+    # удалить значение из множества
+    # предусловие: значение существует в множестве
+    # постусловие: значение удалено из множества
+    def remove(self, value):
+        # вычислить хэш значения
+        value_hash = self._hash_fun(value)
+        slot_find_result = self._seek_slot(value=value, value_hash=value_hash)
+        if not slot_find_result['has_value']:
+            self._remove_status = self.REMOVE_NOT_FOUND
+            return
+        self._remove_value(slot_find_result['value_slot_number'])
+        # если необходимо, уменьшить размер множества
+        if self._is_need_powerset_decrease():
+            self._decrease_powerset()
+        self._remove_status = self.REMOVE_OK
+
+
+    ## запросы:
+
+    # проверить, есть ли значение в множестве
+    def get(self, value):
+        # вычислить хэш значения
+        value_hash = self._hash_fun(value)
+        slot_find_result = self._seek_slot(value=value, value_hash=value_hash)
+        return slot_find_result['has_value']
+
+
+    #  получить размер множества
+    def size(self):
+        return self._size
+
+
+    # пересечение текущего множества и set2
+    def intersection(self, set2):
+        set_intersection = PowerSet()
+        self_fill_items = filter(self._is_item_fill, self._powerset)
+        for item in filter(lambda item: set2.get(item['value']), self_fill_items):
+            set_intersection.put(item['value'])
+        return set_intersection
+
+
+    # объединение текущего множества и set2
+    def union(self, set2):
+        set_union = PowerSet()
+        self_fill_items = filter(self._is_item_fill, self._powerset)
+        set2_fill_items = filter(self._is_item_fill, set2._powerset)
+        for item in set2_fill_items:
+            set_union.put(item['value'])
+        for item in filter(lambda item : not set2.get(item['value']), self_fill_items):
+            set_union.put(item['value'])
+        return set_union
+
+
+    # разница текущего множества и set2
+    def difference(self, set2):
+        set_difference = PowerSet()
+        self_fill_items = filter(self._is_item_fill, self._powerset)
+        set2_fill_items = filter(self._is_item_fill, set2._powerset)
+        for item in filter(lambda item : not set2.get(item['value']), self_fill_items):
+            set_difference.put(item['value'])
+        return set_difference
+
+
+    # возвращает true, если set2 есть
+    # подмножество текущего множества,
+    # иначе false
+    def is_subset(self, set2):
+        set_intersection = PowerSet()
+        self_fill_items = filter(self._is_item_fill, self._powerset)
+        for item in filter(lambda item: set2.get(item['value']), self_fill_items):
+            set_intersection.put(item['value'])
+        return set2.size() == set_intersection.size()
+
+
+    # возвращает true,
+    # если set2 равно текущему множеству,
+    # иначе false
+    def equals(self, set2):
+        set_intersection = PowerSet()
+        self_fill_items = filter(self._is_item_fill, self._powerset)
+        for item in filter(lambda item: set2.get(item['value']), self_fill_items):
+            set_intersection.put(item['value'])
+        return (
+                self.size() == set_intersection.size()
+                and self.size() == set2.size()
+        )
+
+
+    ## дополнительные запросы:
+
+    def get_put_status(self): # возвращает значение PUT_*
+        return self._put_status
+
+    def get_remove_status(self):  # возвращает значение REMOVE_*
+        return self._remove_status
+
+============================ Завершение реализации АТД PowerSet ==============================
+==============================================================================================
+
+
+3. АТД PowerSet на основе HashTable
+
+==============================================================================================
+======================= Начало АТД PowerSet на основе АТД HashTable ==========================
+
+АТД PowerSet
+
+abstract class PowerSet<T> : HashTable<T>
+
+  // конструктор
+// постусловие: создана пустое множество заданного размера
+  public PowerSet<T> PowerSet(int sz); 
+
+  // команды
+
+  // запросы
+
+// пересечение текущего множества и set2
+    public PowerSet intersection(PowerSet set2)
+
+// объединение текущего множества и set2
+    public PowerSet union(PowerSet set2)
+
+// разница текущего множества и set2
+    public PowerSet difference(PowerSet set2)
+
+// возвращает true, если set2 есть
+// подмножество текущего множества,
+// иначе false
+    public boolean isSubset(PowerSet set2)
+
+// возвращает true, 
+// если set2 равно текущему множеству,
+// иначе false
+    public bool equals(PowerSet set2)
+
+
+  // запросы статусов (возможные значения статусов)
+  public int get_put_status(); // успешно; 
+    // система коллизий не смогла найти свободный слот для значения
+
+  public int get_remove_status(); // успешно; значения нету в таблице
+
+===================== Завершение АТД PowerSet на основе АТД HashTable ========================
+==============================================================================================
